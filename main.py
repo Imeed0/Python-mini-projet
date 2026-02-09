@@ -1,12 +1,6 @@
-
-
 import sys
 import os
-
-# Ajouter le répertoire parent au path
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-
-
 def print_menu():
     print("SYSTÈME DE GESTION DE COMPTE BANCAIRE")
     print("1. Étape 1 - Développement sans Design Pattern")
@@ -23,8 +17,6 @@ def run_etape1():
         CompteBancaire, ModuleAffichage, ModuleHistorique, 
         ModuleAlerte, ModuleControle
     )
-    
-    # Saisie utilisateur
     print("\n Configuration du compte ")
     titulaire = input("Nom du titulaire: ").strip()
     while True:
@@ -52,12 +44,9 @@ def run_etape1():
     module_historique = ModuleHistorique(compte)
     module_alerte = ModuleAlerte(compte, seuil=seuil_alerte)
     module_controle = ModuleControle(compte)
-    
     print("\n  État initial  ")
     module_affichage.afficher()
     module_alerte.verifier_solde()
-    
-    # Menu des opérations
     while True:
         print("\n--- Menu des opérations ---")
         print("1. Effectuer un dépôt")
@@ -114,8 +103,6 @@ def run_etape2():
         CompteBancaireSingleton, ModuleAffichage, ModuleHistorique,
         ModuleAlerte, ModuleControle
     )
-    
-    # Saisie utilisateur
     print("\n  Configuration du compte  ")
     titulaire = input("Nom du titulaire: ").strip()
     while True:
@@ -144,10 +131,6 @@ def run_etape2():
     
     compte2 = CompteBancaireSingleton()
     compte3 = CompteBancaireSingleton.get_instance()
-    
-    
-
-    # Menu des opérations
     while True:
         print("\n--- Menu des opérations ---")
         print("1. Effectuer un dépôt")
@@ -202,8 +185,6 @@ def run_etape3():
         CompteBancaireObservable, ObservateurAffichage, ObservateurHistorique,
         ObservateurAlerte, ObservateurControle, ObservateurNotificationEmail
     )
-    
-    # Saisie utilisateur
     print("\n  Configuration du compte  ")
     titulaire = input("Nom du titulaire: ").strip()
     while True:
@@ -240,10 +221,7 @@ def run_etape3():
     
     CompteBancaireObservable.reset_instance()
     compte = CompteBancaireObservable(titulaire, solde_initial)
-    
-    
-    
-    # Menu des opérations
+
     while True:
         print("\n--- Menu des opérations ---")
         print("1. Effectuer un dépôt")
@@ -261,7 +239,7 @@ def run_etape3():
                     break
                 except ValueError:
                     print("Montant invalide. Veuillez entrer un nombre.")
-            print(f"\n>>> Dépôt de {montant}€")
+            print(f"\n>>> Dépôt de {montant}DT")
             compte.deposer(montant)
         elif choix == "2":
             while True:
@@ -270,10 +248,10 @@ def run_etape3():
                     break
                 except ValueError:
                     print("Montant invalide. Veuillez entrer un nombre.")
-            print(f"\n>>> Retrait de {montant}€")
+            print(f"\n>>> Retrait de {montant}DT")
             compte.retirer(montant)
         elif choix == "3":
-            print(f"\nSolde actuel: {compte.solde:.2f}€")
+            print(f"\nSolde actuel: {compte.solde:.2f}DT")
         elif choix == "4":
             compte.afficher_historique()
         elif choix == "0":
@@ -289,8 +267,6 @@ def run_etape4():
         CompteBancaireModel, CompteBancaireController,
         VueSolde, VueHistorique, VueAlerte
     )
-    
-    # Saisie utilisateur
     print("\n  Configuration du compte  ")
     titulaire = input("Nom du titulaire: ").strip()
     while True:
@@ -326,8 +302,6 @@ def run_etape4():
     print("Vues créées et attachées au modèle")
     print("\n  État initial  ")
     vue_solde.afficher()
-    
-    # Menu des opérations
     while True:
         print("\n--- Menu des opérations ---")
         print("1. Effectuer un dépôt")
@@ -346,7 +320,7 @@ def run_etape4():
                     break
                 except ValueError:
                     print("Montant invalide. Veuillez entrer un nombre.")
-            print(f"\n>>> Dépôt de {montant}€")
+            print(f"\n>>> Dépôt de {montant}DT")
             succes, msg = controller.effectuer_depot(montant)
             print(f"   Résultat: {msg}")
         elif choix == "2":
@@ -356,7 +330,7 @@ def run_etape4():
                     break
                 except ValueError:
                     print("Montant invalide. Veuillez entrer un nombre.")
-            print(f"\n>>> Retrait de {montant}€")
+            print(f"\n>>> Retrait de {montant}DT")
             succes, msg = controller.effectuer_retrait(montant)
             print(f"   Résultat: {msg}")
         elif choix == "3":

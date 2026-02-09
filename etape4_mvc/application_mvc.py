@@ -100,20 +100,20 @@ class CompteBancaireModel(Observable):
         self._enregistrer_operation("DEPOT", montant)
         self.notifier(type_operation="DEPOT", montant=montant, solde=self._solde)
         
-        return True, f"Dépôt de {montant:.2f}€ effectué"
+        return True, f"Dépôt de {montant:.2f}DT effectué"
     
     def effectuer_retrait(self, montant: float) -> tuple[bool, str]:
         if montant <= 0:
             return False, "Le montant doit être positif"
         
         if montant > self._solde:
-            return False, f"Solde insuffisant ({self._solde:.2f}€)"
+            return False, f"Solde insuffisant ({self._solde:.2f}DT)"
         
         self._solde -= montant
         self._enregistrer_operation("RETRAIT", montant)
         self.notifier(type_operation="RETRAIT", montant=montant, solde=self._solde)
         
-        return True, f"Retrait de {montant:.2f}€ effectué"
+        return True, f"Retrait de {montant:.2f}DT effectué"
 class VueBase(Observer, ABC):
     def __init__(self, model: CompteBancaireModel):
         self._model = model
@@ -132,13 +132,13 @@ class VueSolde(VueBase):
     def afficher(self) -> None:
         print(f"SOLDE DU COMPTE")
         print(f"Titulaire: {self._model.titulaire}")
-        print(f"Solde actuel: {self._model.solde:.2f}€")
+        print(f"Solde actuel: {self._model.solde:.2f}DT")
 
     
     def update(self, sujet: Observable, **kwargs) -> None:
         type_op = kwargs.get('type_operation', '')
         montant = kwargs.get('montant', 0)
-        print(f"   [Vue Solde]  {type_op}: {montant:.2f}€ → Solde: {self._model.solde:.2f}€")
+        print(f"   [Vue Solde]  {type_op}: {montant:.2f}DT → Solde: {self._model.solde:.2f}DT")
 
 
 class VueHistorique(VueBase):
@@ -152,7 +152,7 @@ class VueHistorique(VueBase):
             for i, op in enumerate(historique, 1):
                 symbole = "↑" if op['type'] in ["DEPOT", "OUVERTURE"] else "↓"
                 print(f"│ {i}. {symbole} [{op['date']}] {op['type']}: "
-                      f"{op['montant']:.2f}€ (Solde: {op['solde_apres']:.2f}€)")
+                      f"{op['montant']:.2f}DT (Solde: {op['solde_apres']:.2f}DT)")
         
     
     def update(self, sujet: Observable, **kwargs) -> None:
@@ -167,20 +167,20 @@ class VueAlerte(VueBase):
     
     def afficher(self) -> None:
         if self._model.solde < self.seuil_alerte:
-            print(f"\n ALERTE: Solde bas ({self._model.solde:.2f}€ < {self.seuil_alerte:.2f}€)")
+            print(f"\n ALERTE: Solde bas ({self._model.solde:.2f}DT < {self.seuil_alerte:.2f}DT)")
         else:
-            print(f"\n Solde OK: {self._model.solde:.2f}€")
+            print(f"\n Solde OK: {self._model.solde:.2f}DT")
     
     def update(self, sujet: Observable, **kwargs) -> None:
         solde = kwargs.get('solde', 0)
         if solde < self.seuil_alerte:
-            print(f"[Vue Alerte]  ATTENTION: Solde critique ({solde:.2f}€)!")
+            print(f"[Vue Alerte]  ATTENTION: Solde critique ({solde:.2f}DT)!")
 
 
 class VueConsole(VueBase):
     def afficher(self) -> None:
         print(f" SYSTÈME BANCAIRE - {self._model.titulaire}")
-        print(f"Solde: {self._model.solde:.2f}€")
+        print(f"Solde: {self._model.solde:.2f}DT")
 
     
     def afficher_menu(self) -> None:
@@ -259,14 +259,14 @@ class CompteBancaireController:
             if choix == "1": 
                 montant = vue_console.demander_montant("dépôt")
                 if montant is not None:
-                    print("\n--- Notifications des vues ---")
+                    print("\n  Notifications des vues  ")
                     succes, message = self.effectuer_depot(montant)
                     vue_console.afficher_message(message, succes)
             
             elif choix == "2":  
                 montant = vue_console.demander_montant("retrait")
                 if montant is not None:
-                    print("\n--- Notifications des vues ---")
+                    print("\n  Notifications des vues  ")
                     succes, message = self.effectuer_retrait(montant)
                     vue_console.afficher_message(message, succes)
             
@@ -337,13 +337,13 @@ def demonstration_mvc():
     print("\n2. État initial")
     vue_solde.afficher()
     print("\n3. Opérations via le Contrôleur")
-    print("\n>>> Dépôt de 500€")
+    print("\n>>> Dépôt de 500DT")
     succes, msg = controller.effectuer_depot(500.0)
     print(f"   Résultat: {msg}")
-    print("\n>>> Retrait de 300€")
+    print("\n>>> Retrait de 300DT")
     succes, msg = controller.effectuer_retrait(300.0)
     print(f"   Résultat: {msg}")
-    print("\n>>> Retrait de 800€")
+    print("\n>>> Retrait de 800DT")
     succes, msg = controller.effectuer_retrait(800.0)
     print(f"   Résultat: {msg}")
     print("\n4. Affichage des différentes Vues")

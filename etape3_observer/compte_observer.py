@@ -103,7 +103,7 @@ class CompteBancaireObservable(Observable):
         self._solde += montant
         self._enregistrer_operation("DEPOT", montant)
         
-        print(f"\n💰 Dépôt de {montant:.2f}€ effectué. Nouveau solde: {self._solde:.2f}€")
+        print(f"\n💰 Dépôt de {montant:.2f}DT effectué. Nouveau solde: {self._solde:.2f}DT")
         self.notifier(
             type_operation="DEPOT",
             montant=montant,
@@ -124,7 +124,7 @@ class CompteBancaireObservable(Observable):
         self._solde -= montant
         self._enregistrer_operation("RETRAIT", montant)
         
-        print(f"\n Retrait de {montant:.2f}€ effectué. Nouveau solde: {self._solde:.2f}€")
+        print(f"\n Retrait de {montant:.2f}DT effectué. Nouveau solde: {self._solde:.2f}DT")
 
         self.notifier(
             type_operation="RETRAIT",
@@ -135,20 +135,20 @@ class CompteBancaireObservable(Observable):
         return True
     
     def __str__(self) -> str:
-        return f"Compte de {self._titulaire} - Solde: {self._solde:.2f}€"
+        return f"Compte de {self._titulaire} - Solde: {self._solde:.2f}DT"
 
 
 class ObservateurAffichage(Observer):
     def update(self, sujet: Observable, **kwargs) -> None:
         if isinstance(sujet, CompteBancaireObservable):
-            print(f"[Affichage] Solde mis à jour: {sujet.solde:.2f}€")
+            print(f"[Affichage] Solde mis à jour: {sujet.solde:.2f}DT")
 
 
 class ObservateurHistorique(Observer):
     def update(self, sujet: Observable, **kwargs) -> None:
         type_op = kwargs.get('type_operation', 'INCONNU')
         montant = kwargs.get('montant', 0)
-        print(f"[Historique] Nouvelle opération: {type_op} de {montant:.2f}€")
+        print(f"[Historique] Nouvelle opération: {type_op} de {montant:.2f}DT")
 
 
 class ObservateurAlerte(Observer):
@@ -158,9 +158,9 @@ class ObservateurAlerte(Observer):
     def update(self, sujet: Observable, **kwargs) -> None:
         if isinstance(sujet, CompteBancaireObservable):
             if sujet.solde < self.seuil:
-                print(f"[ALERTE] Solde critique! {sujet.solde:.2f}€ < {self.seuil:.2f}€")
+                print(f"[ALERTE] Solde critique! {sujet.solde:.2f}DT < {self.seuil:.2f}DT")
             elif sujet.solde < self.seuil * 2:
-                print(f"[Alerte] Solde bas: {sujet.solde:.2f}€")
+                print(f"[Alerte] Solde bas: {sujet.solde:.2f}DT")
 
 
 class ObservateurControle(Observer):
@@ -172,7 +172,7 @@ class ObservateurControle(Observer):
         montant = kwargs.get('montant', 0)
         
         if type_op == "RETRAIT" and montant > self.limite_retrait:
-            print(f"[Contrôle]  Retrait important détecté: {montant:.2f}€")
+            print(f"[Contrôle]  Retrait important détecté: {montant:.2f}DT")
         else:
             print(f"[Contrôle] Opération validée")
 
@@ -187,13 +187,13 @@ class ObservateurNotificationEmail(Observer):
         solde = kwargs.get('solde', 0)
         
         print(f"[Email → {self.email}] "
-              f"{type_op} de {montant:.2f}€. Solde: {solde:.2f}€")
+              f"{type_op} de {montant:.2f}DT. Solde: {solde:.2f}DT")
 
 
 if __name__ == "__main__":
     print("ÉTAPE 3: Système avec Pattern Observer")
     compte = CompteBancaireObservable("Imed Zayet", 1000.0)
-    print("\n--- Création et attachement des observateurs ---")
+    print("\n  Création et attachement des observateurs  ")
     obs_affichage = ObservateurAffichage()
     obs_historique = ObservateurHistorique()
     obs_alerte = ObservateurAlerte(seuil=200.0)

@@ -72,7 +72,7 @@ class CompteBancaireSingleton:
             self._solde += montant
             self._enregistrer_operation("DEPOT", montant)
         
-        print(f"Dépôt de {montant:.2f}€ effectué. Nouveau solde: {self._solde:.2f}€")
+        print(f"Dépôt de {montant:.2f}DT effectué. Nouveau solde: {self._solde:.2f}DT")
         return True
     
     def retirer(self, montant: float) -> bool:
@@ -82,17 +82,17 @@ class CompteBancaireSingleton:
         
         with self._lock:  
             if montant > self._solde:
-                print(f"Erreur: Solde insuffisant. Solde: {self._solde:.2f}€")
+                print(f"Erreur: Solde insuffisant. Solde: {self._solde:.2f}DT")
                 return False
             
             self._solde -= montant
             self._enregistrer_operation("RETRAIT", montant)
         
-        print(f"Retrait de {montant:.2f}€ effectué. Nouveau solde: {self._solde:.2f}€")
+        print(f"Retrait de {montant:.2f}DT effectué. Nouveau solde: {self._solde:.2f}DT")
         return True
     
     def consulter_solde(self) -> float:
-        print(f"Solde du compte de {self._titulaire}: {self._solde:.2f}€")
+        print(f"Solde du compte de {self._titulaire}: {self._solde:.2f}DT")
         return self._solde
     
     def afficher_historique(self) -> None:
@@ -102,11 +102,11 @@ class CompteBancaireSingleton:
             return
         
         for i, op in enumerate(self._historique, 1):
-            print(f"{i}. [{op['date']}] {op['type']}: {op['montant']:.2f}€ "
-                  f"(Solde: {op['solde_apres']:.2f}€)")
+            print(f"{i}. [{op['date']}] {op['type']}: {op['montant']:.2f}DT "
+                  f"(Solde: {op['solde_apres']:.2f}DT)")
     
     def __str__(self) -> str:
-        return f"Compte de {self._titulaire} - Solde: {self._solde:.2f}€"
+        return f"Compte de {self._titulaire} - Solde: {self._solde:.2f}DT"
 
 class ModuleAffichage:
     def afficher(self) -> None:
@@ -129,9 +129,9 @@ class ModuleAlerte:
         compte = CompteBancaireSingleton.get_instance()
         if compte.solde < self.seuil:
             print(f"\n  [Module Alerte] ATTENTION: Solde bas! "
-                  f"({compte.solde:.2f}€ < {self.seuil:.2f}€)")
+                  f"({compte.solde:.2f}DT < {self.seuil:.2f}DT)")
         else:
-            print(f"\n [Module Alerte] Solde OK: {compte.solde:.2f}€")
+            print(f"\n [Module Alerte] Solde OK: {compte.solde:.2f}DT")
 
 
 class ModuleControle:
@@ -139,7 +139,7 @@ class ModuleControle:
         compte = CompteBancaireSingleton.get_instance()
         print(f"\n[Module Contrôle] Rapport")
         print(f"  - Titulaire: {compte.titulaire}")
-        print(f"  - Solde actuel: {compte.solde:.2f}€")
+        print(f"  - Solde actuel: {compte.solde:.2f}DT")
         print(f"  - Nombre d'opérations: {len(compte.historique)}")
 
 
@@ -179,7 +179,7 @@ def test_thread_safety():
             print(future.result())
     
     compte = CompteBancaireSingleton.get_instance()
-    print(f"\nSolde final après 5 dépôts de 100€: {compte.solde:.2f}€")
+    print(f"\nSolde final après 5 dépôts de 100DT: {compte.solde:.2f}DT")
 
 
 if __name__ == "__main__":
