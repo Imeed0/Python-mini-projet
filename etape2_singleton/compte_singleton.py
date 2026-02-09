@@ -1,198 +1,110 @@
 from datetime import datetime
-from typing import List, Dict, Optional
-import threading
 
 class CompteBancaireSingleton:
-    _instance: Optional['CompteBancaireSingleton'] = None
-    _lock: threading.Lock = threading.Lock()  # Pour la thread-safety
-    _initialise: bool = False
+    _instance = None  
     
-    def __new__(cls, titulaire: str = "", solde_initial: float = 0.0):
+    def __new__(cls, titulaire="", solde_initial=0.0):
         if cls._instance is None:
-            with cls._lock:
-                # Double vérification pour éviter les conditions de course
-                if cls._instance is None:
-                    cls._instance = super().__new__(cls)
+            cls._instance = super().__new__(cls)
+            cls._instance._initialise = False
         return cls._instance
     
-    def __init__(self, titulaire: str = "", solde_initial: float = 0.0):
-        if CompteBancaireSingleton._initialise:
+    def __init__(self, titulaire="", solde_initial=0.0):
+        if self._initialise:
             return
         
         self._titulaire = titulaire
         self._solde = solde_initial
-        self._historique: List[Dict] = []
+        self._historique = []
         
         if solde_initial > 0:
-            self._enregistrer_operation("OUVERTURE", solde_initial)
+            self._enregistrer("OUVERTURE", solde_initial)
         
-        CompteBancaireSingleton._initialise = True
-        print(f"Instance unique du compte créée pour {titulaire}")
+        self._initialise = True
+        print(f"Instance unique créée pour {titulaire}")
     
     @classmethod
-    def get_instance(cls) -> 'CompteBancaireSingleton':
+    def get_instance(cls):
         if cls._instance is None:
-            raise RuntimeError("Le compte n'a pas encore été créé. "
-                             "Utilisez d'abord CompteBancaireSingleton(titulaire, solde)")
+            raise RuntimeError("Le compte n'existe pas encore")
         return cls._instance
     
-    @classmethod
-    def reset_instance(cls) -> None:
-        with cls._lock:
-            cls._instance = None
-            cls._initialise = False
-    
-    @property
-    def titulaire(self) -> str:
-        return self._titulaire
-    
-    @property
-    def solde(self) -> float:
-        return self._solde
-    
-    @property
-    def historique(self) -> List[Dict]:
-        return self._historique.copy()
-    
-    def _enregistrer_operation(self, type_operation: str, montant: float) -> None:
-        operation = {
+    def _enregistrer(self, type_op, montant):
+        self._historique.append({
             "date": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-            "type": type_operation,
+            "type": type_op,
             "montant": montant,
             "solde_apres": self._solde
-        }
-        self._historique.append(operation)
+        })
     
-    def deposer(self, montant: float) -> bool:
+    def deposer(self, montant):
         if montant <= 0:
-            print(f"Erreur: Le montant du dépôt doit être positif.")
+            print("Erreur: Montant doit être positif")
             return False
-        
-        with self._lock:  
-            self._solde += montant
-            self._enregistrer_operation("DEPOT", montant)
-        
-        print(f"Dépôt de {montant:.2f}DT effectué. Nouveau solde: {self._solde:.2f}DT")
+        self._solde += montant
+        self._enregistrer("DEPOT", montant)
+        print(f"Dépôt de {montant:.2f}DT. Nouveau solde: {self._solde:.2f}DT")
         return True
     
-    def retirer(self, montant: float) -> bool:
+    def retirer(self, montant):
         if montant <= 0:
-            print(f"Erreur: Le montant du retrait doit être positif.")
+            print("Erreur: Montant doit être positif")
             return False
-        
-        with self._lock:  
-            if montant > self._solde:
-                print(f"Erreur: Solde insuffisant. Solde: {self._solde:.2f}DT")
-                return False
-            
-            self._solde -= montant
-            self._enregistrer_operation("RETRAIT", montant)
-        
-        print(f"Retrait de {montant:.2f}DT effectué. Nouveau solde: {self._solde:.2f}DT")
+        if montant > self._solde:
+            print(f"Erreur: Solde insuffisant ({self._solde:.2f}DT)")
+            return False
+        self._solde -= montant
+        self._enregistrer("RETRAIT", montant)
+        print(f"Retrait de {montant:.2f}DT. Nouveau solde: {self._solde:.2f}DT")
         return True
     
-    def consulter_solde(self) -> float:
-        print(f"Solde du compte de {self._titulaire}: {self._solde:.2f}DT")
-        return self._solde
+    def afficher_solde(self):
+        print(f"Solde de {self._titulaire}: {self._solde:.2f}DT")
     
-    def afficher_historique(self) -> None:
-        print(f"Historique du compte de {self._titulaire}")
-        if not self._historique:
-            print("Aucune opération enregistrée.")
-            return
-        
+    def afficher_historique(self):
+        print(f"\nHistorique de {self._titulaire}:")
         for i, op in enumerate(self._historique, 1):
-            print(f"{i}. [{op['date']}] {op['type']}: {op['montant']:.2f}DT "
-                  f"(Solde: {op['solde_apres']:.2f}DT)")
-    
-    def __str__(self) -> str:
-        return f"Compte de {self._titulaire} - Solde: {self._solde:.2f}DT"
-
-class ModuleAffichage:
-    def afficher(self) -> None:
-        compte = CompteBancaireSingleton.get_instance()
-        print(f"\n[Module Affichage] {compte}")
-
-
-class ModuleHistorique:
-    def afficher_historique(self) -> None:
-        compte = CompteBancaireSingleton.get_instance()
-        print("\n[Module Historique]")
-        compte.afficher_historique()
-
-
-class ModuleAlerte:
-    def __init__(self, seuil: float = 100.0):
-        self.seuil = seuil
-    
-    def verifier_solde(self) -> None:
-        compte = CompteBancaireSingleton.get_instance()
-        if compte.solde < self.seuil:
-            print(f"\n  [Module Alerte] ATTENTION: Solde bas! "
-                  f"({compte.solde:.2f}DT < {self.seuil:.2f}DT)")
-        else:
-            print(f"\n [Module Alerte] Solde OK: {compte.solde:.2f}DT")
-
-
-class ModuleControle:
-    def rapport(self) -> None:
-        compte = CompteBancaireSingleton.get_instance()
-        print(f"\n[Module Contrôle] Rapport")
-        print(f"  - Titulaire: {compte.titulaire}")
-        print(f"  - Solde actuel: {compte.solde:.2f}DT")
-        print(f"  - Nombre d'opérations: {len(compte.historique)}")
-
-
-def test_acces_multiples():
-    print("Test: Accès multiples au même compte")
-
-    module_affichage = ModuleAffichage()
-    module_alerte = ModuleAlerte(seuil=200.0)
-    module_controle = ModuleControle()
-    module_affichage.afficher()
-    module_alerte.verifier_solde()
-    module_controle.rapport()
-
-
-def test_singleton():
-    print("Test: Vérification du pattern Singleton")
-
-    compte1 = CompteBancaireSingleton()
-    compte2 = CompteBancaireSingleton()
-    compte3 = CompteBancaireSingleton.get_instance()
-    
-    
-
-
-def test_thread_safety():
-    import concurrent.futures
-    print("Test: Thread-safety")
-    
-    def faire_operation(id_thread: int):
-        compte = CompteBancaireSingleton.get_instance()
-        compte.deposer(100.0)
-        return f"Thread {id_thread}: Dépôt effectué"
-    
-    with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:
-        futures = [executor.submit(faire_operation, i) for i in range(5)]
-        for future in concurrent.futures.as_completed(futures):
-            print(future.result())
-    
-    compte = CompteBancaireSingleton.get_instance()
-    print(f"\nSolde final après 5 dépôts de 100DT: {compte.solde:.2f}DT")
+            print(f"  {i}. [{op['date']}] {op['type']}: {op['montant']:.2f}DT → Solde: {op['solde_apres']:.2f}DT")
 
 
 if __name__ == "__main__":
-    print("ÉTAPE 2: Système avec Pattern Singleton")
-    compte = CompteBancaireSingleton("Imed Zayet", 1000.0)
-    print("\n  État initial  ")
-    compte.consulter_solde()
-    print("\n  Opérations  ")
-    compte.deposer(500.0)
-    compte.retirer(300.0)
-    test_singleton()
-    test_acces_multiples()
-    test_thread_safety()
-    ModuleHistorique().afficher_historique()
+    print("ÉTAPE 2: Pattern Singleton\n")
+    nom = input("Entrez le nom du titulaire: ")
+    solde = float(input("Entrez le solde initial: "))
+    compte = CompteBancaireSingleton(nom, solde)
+    
+    while True:
+        print("\n--- Menu ---")
+        print("1. Déposer")
+        print("2. Retirer")
+        print("3. Afficher solde")
+        print("4. Afficher historique")
+        print("5. Tester Singleton")
+        print("0. Quitter")
+        
+        choix = input("\nVotre choix: ")
+        
+        if choix == "1":
+            montant = float(input("Montant à déposer: "))
+            compte.deposer(montant)
+        elif choix == "2":
+            montant = float(input("Montant à retirer: "))
+            compte.retirer(montant)
+        elif choix == "3":
+            compte.afficher_solde()
+        elif choix == "4":
+            compte.afficher_historique()
+        elif choix == "5":
+            print("\n Test Singleton")
+            nom2 = input("Entrez un AUTRE nom: ")
+            solde2 = float(input("Entrez un AUTRE solde: "))
+            compte2 = CompteBancaireSingleton(nom2, solde2)
+            print(f"\nRésultat:")
+            print(f"  Titulaire: {compte2._titulaire} (pas '{nom2}')")
+            print(f"  Solde: {compte2._solde:.2f}DT (pas {solde2:.2f}DT)")
+        elif choix == "0":
+            break
+        else:
+            print("Choix invalide")
     
 

@@ -1,139 +1,86 @@
 from datetime import datetime
-from typing import List, Dict
 
 class CompteBancaire:
     def __init__(self, titulaire: str, solde_initial: float = 0.0):
         self._titulaire = titulaire
         self._solde = solde_initial
-        self._historique: List[Dict] = []
-
+        self._historique = []
+        
         if solde_initial > 0:
-            self._enregistrer_operation("OUVERTURE", solde_initial)
+            self._enregistrer("OUVERTURE", solde_initial)
     
-    @property
-    def titulaire(self) -> str:
-        return self._titulaire
-    
-    @property
-    def solde(self) -> float:
-        return self._solde
-    
-    @property
-    def historique(self) -> List[Dict]:
-        return self._historique.copy()
-    
-    def _enregistrer_operation(self, type_operation: str, montant: float) -> None:
-        operation = {
+    def _enregistrer(self, type_op: str, montant: float):
+        self._historique.append({
             "date": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-            "type": type_operation,
+            "type": type_op,
             "montant": montant,
             "solde_apres": self._solde
-        }
-        self._historique.append(operation)
+        })
     
-    def deposer(self, montant: float) -> bool:
+    def deposer(self, montant: float):
         if montant <= 0:
-            print(f"Erreur: Le montant du dépôt doit être positif. Montant fourni: {montant}")
+            print("Erreur: Le montant doit être positif")
             return False
         
         self._solde += montant
-        self._enregistrer_operation("DEPOT", montant)
+        self._enregistrer("DEPOT", montant)
         print(f"Dépôt de {montant:.2f}DT effectué. Nouveau solde: {self._solde:.2f}DT")
         return True
     
-    def retirer(self, montant: float) -> bool:
+    def retirer(self, montant: float):
         if montant <= 0:
-            print(f"Erreur: Le montant du retrait doit être positif. Montant fourni: {montant}")
+            print("Erreur: Le montant doit être positif")
             return False
         
         if montant > self._solde:
-            print(f"Erreur: Solde insuffisant. Solde actuel: {self._solde:.2f}DT, Retrait demandé: {montant:.2f}DT")
+            print(f"Erreur: Solde insuffisant ({self._solde:.2f}DT)")
             return False
         
         self._solde -= montant
-        self._enregistrer_operation("RETRAIT", montant)
+        self._enregistrer("RETRAIT", montant)
         print(f"Retrait de {montant:.2f}DT effectué. Nouveau solde: {self._solde:.2f}DT")
         return True
     
-    def consulter_solde(self) -> float:
-        print(f"Solde du compte de {self._titulaire}: {self._solde:.2f}DT")
-        return self._solde
+    def afficher_solde(self):
+        print(f"Solde de {self._titulaire}: {self._solde:.2f}DT")
     
-    def afficher_historique(self) -> None:
-        print(f"Historique du compte de {self._titulaire}")
-        
+    def afficher_historique(self):
+        print(f"\nHistorique de {self._titulaire}:")
         if not self._historique:
-            print("Aucune opération enregistrée.")
+            print("Aucune opération")
             return
-        
         for i, op in enumerate(self._historique, 1):
-            print(f"{i}. [{op['date']}] {op['type']}: {op['montant']:.2f}DT "
-                  f"(Solde: {op['solde_apres']:.2f}DT)")
-        
-        print(f"{'='*60}\n")
-    
-    def __str__(self) -> str:
-        return f"Compte de {self._titulaire} - Solde: {self._solde:.2f}DT"
-
-class ModuleAffichage:
-    def __init__(self, compte: CompteBancaire):
-        self.compte = compte
-
-    def afficher(self) -> None:
-        print(f"\n[Module Affichage] {self.compte}")
-
-class ModuleHistorique:
-    def __init__(self, compte: CompteBancaire):
-        self.compte = compte
-    
-    def afficher_historique(self) -> None:
-        print("\n[Module Historique]")
-        self.compte.afficher_historique()
-
-
-class ModuleAlerte:
-    def __init__(self, compte: CompteBancaire, seuil: float = 100.0):
-        self.compte = compte
-        self.seuil = seuil
-    
-    def verifier_solde(self) -> None:
-        if self.compte.solde < self.seuil:
-            print(f"\n  [Module Alerte] ATTENTION: Solde bas! "
-                  f"Solde actuel: {self.compte.solde:.2f}DT (seuil: {self.seuil:.2f}DT)")
-        else:
-            print(f"\n [Module Alerte] Solde OK: {self.compte.solde:.2f}DT")
-
-
-class ModuleControle:
-    def __init__(self, compte: CompteBancaire):
-        self.compte = compte
-    
-    def rapport(self) -> None:
-        print(f"\n[Module Contrôle] Rapport")
-        print(f"  - Titulaire: {self.compte.titulaire}")
-        print(f"  - Solde actuel: {self.compte.solde:.2f}DT")
-        print(f"  - Nombre d'opérations: {len(self.compte.historique)}")
-
+            print(f"  {i}. [{op['date']}] {op['type']}: {op['montant']:.2f}DT → Solde: {op['solde_apres']:.2f}DT")
 
 
 if __name__ == "__main__":
-    print("ÉTAPE 1: Système sans Design Pattern")
-    compte = CompteBancaire("Imed Zayet", 1000.0)
-    module_affichage = ModuleAffichage(compte)
-    module_historique = ModuleHistorique(compte)
-    module_alerte = ModuleAlerte(compte, seuil=200.0)
-    module_controle = ModuleControle(compte)
-    print("\n  État initial  ")
-    module_affichage.afficher()
-    module_alerte.verifier_solde()
-    print("\n  Opérations  ")
-    compte.deposer(500.0)
-    compte.retirer(300.0)
-    compte.retirer(1000.0)  
-    print("\n  État après opérations  ")
-    module_affichage.afficher()
-    module_alerte.verifier_solde()
-    module_controle.rapport()
-    module_historique.afficher_historique()
-    compte2 = CompteBancaire("Imed Zayet", 500.0)
+    print("ÉTAPE 1: Compte Bancaire Simple\n")
+    nom = input("Entrez le nom du titulaire: ")
+    solde = float(input("Entrez le solde initial: "))
+    compte = CompteBancaire(nom, solde)
+    
+    while True:
+        print("\n--- Menu ---")
+        print("1. Déposer")
+        print("2. Retirer")
+        print("3. Afficher solde")
+        print("4. Afficher historique")
+        print("0. Quitter")
+        
+        choix = input("\nVotre choix: ")
+        
+        if choix == "1":
+            montant = float(input("Montant à déposer: "))
+            compte.deposer(montant)
+        elif choix == "2":
+            montant = float(input("Montant à retirer: "))
+            compte.retirer(montant)
+        elif choix == "3":
+            compte.afficher_solde()
+        elif choix == "4":
+            compte.afficher_historique()
+        elif choix == "0":
+            break
+        else:
+            print("Choix invalide")
     

@@ -1,225 +1,162 @@
 from abc import ABC, abstractmethod
 from datetime import datetime
-from typing import List, Dict, Optional
-import threading
-
 class Observer(ABC):
     @abstractmethod
-    def update(self, sujet: 'Observable', **kwargs) -> None:
+    def update(self, compte, **kwargs):
         pass
-
-
-class Observable(ABC):
+class Observable:
     def __init__(self):
-        self._observers: List[Observer] = []
-        self._lock = threading.Lock()
+        self._observers = []
     
-    def attacher(self, observer: Observer) -> None:
-        with self._lock:
-            if observer not in self._observers:
-                self._observers.append(observer)
-                print(f" Observateur {observer.__class__.__name__} attaché")
+    def attacher(self, observer):
+        if observer not in self._observers:
+            self._observers.append(observer)
+            
     
-    def detacher(self, observer: Observer) -> None:
-        with self._lock:
-            if observer in self._observers:
-                self._observers.remove(observer)
-                print(f" Observateur {observer.__class__.__name__} détaché")
+    def detacher(self, observer):
+        if observer in self._observers:
+            self._observers.remove(observer)
+            
     
-    def notifier(self, **kwargs) -> None:
-        with self._lock:
-            observers_copy = self._observers.copy()
-        
-        for observer in observers_copy:
+    def notifier(self, **kwargs):
+        for observer in self._observers:
             observer.update(self, **kwargs)
-
-
 class CompteBancaireObservable(Observable):
-    _instance: Optional['CompteBancaireObservable'] = None
-    _singleton_lock: threading.Lock = threading.Lock()
-    _initialise: bool = False
+    _instance = None
     
-    def __new__(cls, titulaire: str = "", solde_initial: float = 0.0):
+    def __new__(cls, titulaire="", solde_initial=0.0):
         if cls._instance is None:
-            with cls._singleton_lock:
-                if cls._instance is None:
-                    cls._instance = super().__new__(cls)
+            cls._instance = super().__new__(cls)
+            cls._instance._initialise = False
         return cls._instance
     
-    def __init__(self, titulaire: str = "", solde_initial: float = 0.0):
-        if CompteBancaireObservable._initialise:
+    def __init__(self, titulaire="", solde_initial=0.0):
+        if self._initialise:
             return
         
-        super().__init__()  
-        
+        super().__init__()
         self._titulaire = titulaire
         self._solde = solde_initial
-        self._historique: List[Dict] = []
+        self._historique = []
         
         if solde_initial > 0:
-            self._enregistrer_operation("OUVERTURE", solde_initial)
+            self._enregistrer("OUVERTURE", solde_initial)
         
-        CompteBancaireObservable._initialise = True
-        print(f"Compte observable créé pour {titulaire}")
+        self._initialise = True
+        print(f"Compte créé pour {titulaire}")
     
     @classmethod
-    def get_instance(cls) -> 'CompteBancaireObservable':
+    def get_instance(cls):
         if cls._instance is None:
-            raise RuntimeError("Le compte n'a pas encore été créé.")
+            raise RuntimeError("Le compte n'existe pas encore")
         return cls._instance
     
-    @classmethod
-    def reset_instance(cls) -> None:
-        with cls._singleton_lock:
-            cls._instance = None
-            cls._initialise = False
-    
-    @property
-    def titulaire(self) -> str:
-        return self._titulaire
-    
-    @property
-    def solde(self) -> float:
-        return self._solde
-    
-    @property
-    def historique(self) -> List[Dict]:
-        return self._historique.copy()
-    
-    def _enregistrer_operation(self, type_operation: str, montant: float) -> None:
-        operation = {
+    def _enregistrer(self, type_op, montant):
+        self._historique.append({
             "date": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-            "type": type_operation,
+            "type": type_op,
             "montant": montant,
             "solde_apres": self._solde
-        }
-        self._historique.append(operation)
+        })
     
-    def deposer(self, montant: float) -> bool:
+    def deposer(self, montant):
         if montant <= 0:
-            print(f"Erreur: Le montant du dépôt doit être positif.")
+            print("Erreur: Montant doit être positif")
             return False
-        
         self._solde += montant
-        self._enregistrer_operation("DEPOT", montant)
-        
-        print(f"\n💰 Dépôt de {montant:.2f}DT effectué. Nouveau solde: {self._solde:.2f}DT")
-        self.notifier(
-            type_operation="DEPOT",
-            montant=montant,
-            solde=self._solde
-        )
-        
+        self._enregistrer("DEPOT", montant)
+        print(f"Dépôt de {montant:.2f}DT. Nouveau solde: {self._solde:.2f}DT")
+        self.notifier(type_operation="DEPOT", montant=montant, solde=self._solde)
         return True
     
-    def retirer(self, montant: float) -> bool:
+    def retirer(self, montant):
         if montant <= 0:
-            print(f"Erreur: Le montant du retrait doit être positif.")
+            print("Erreur: Montant doit être positif")
             return False
-        
         if montant > self._solde:
-            print(f"Erreur: Solde insuffisant.")
+            print(f"Erreur: Solde insuffisant ({self._solde:.2f}DT)")
             return False
-        
         self._solde -= montant
-        self._enregistrer_operation("RETRAIT", montant)
-        
-        print(f"\n Retrait de {montant:.2f}DT effectué. Nouveau solde: {self._solde:.2f}DT")
-
-        self.notifier(
-            type_operation="RETRAIT",
-            montant=montant,
-            solde=self._solde
-        )
-        
+        self._enregistrer("RETRAIT", montant)
+        print(f"Retrait de {montant:.2f}DT. Nouveau solde: {self._solde:.2f}DT")
+        self.notifier(type_operation="RETRAIT", montant=montant, solde=self._solde)
         return True
     
-    def __str__(self) -> str:
-        return f"Compte de {self._titulaire} - Solde: {self._solde:.2f}DT"
+    def afficher_solde(self):
+        print(f"Solde de {self._titulaire}: {self._solde:.2f}DT")
+    
+    def afficher_historique(self):
+        print(f"\nHistorique de {self._titulaire}:")
+        for i, op in enumerate(self._historique, 1):
+            print(f"  {i}. [{op['date']}] {op['type']}: {op['montant']:.2f}DT → Solde: {op['solde_apres']:.2f}DT")
 
 
 class ObservateurAffichage(Observer):
-    def update(self, sujet: Observable, **kwargs) -> None:
-        if isinstance(sujet, CompteBancaireObservable):
-            print(f"[Affichage] Solde mis à jour: {sujet.solde:.2f}DT")
-
-
-class ObservateurHistorique(Observer):
-    def update(self, sujet: Observable, **kwargs) -> None:
-        type_op = kwargs.get('type_operation', 'INCONNU')
-        montant = kwargs.get('montant', 0)
-        print(f"[Historique] Nouvelle opération: {type_op} de {montant:.2f}DT")
+    def update(self, compte, **kwargs):
+        print(f"  [Affichage] Solde: {compte._solde:.2f}DT")
 
 
 class ObservateurAlerte(Observer):
-    def __init__(self, seuil: float = 100.0):
-        self.seuil = seuil
+    def __init__(self, seuil=100.0):
+        self._seuil = seuil
     
-    def update(self, sujet: Observable, **kwargs) -> None:
-        if isinstance(sujet, CompteBancaireObservable):
-            if sujet.solde < self.seuil:
-                print(f"[ALERTE] Solde critique! {sujet.solde:.2f}DT < {self.seuil:.2f}DT")
-            elif sujet.solde < self.seuil * 2:
-                print(f"[Alerte] Solde bas: {sujet.solde:.2f}DT")
+    def update(self, compte, **kwargs):
+        if compte._solde < self._seuil:
+            print(f"  [ALERTE] Solde bas! {compte._solde:.2f}DT < {self._seuil:.2f}DT")
 
 
-class ObservateurControle(Observer):
-    def __init__(self, limite_retrait: float = 500.0):
-        self.limite_retrait = limite_retrait
-    
-    def update(self, sujet: Observable, **kwargs) -> None:
+class ObservateurMessage(Observer):
+    def update(self, compte, **kwargs):
         type_op = kwargs.get('type_operation', '')
         montant = kwargs.get('montant', 0)
-        
-        if type_op == "RETRAIT" and montant > self.limite_retrait:
-            print(f"[Contrôle]  Retrait important détecté: {montant:.2f}DT")
-        else:
-            print(f"[Contrôle] Opération validée")
-
-
-class ObservateurNotificationEmail(Observer):
-    def __init__(self, email: str):
-        self.email = email
-    
-    def update(self, sujet: Observable, **kwargs) -> None:
-        type_op = kwargs.get('type_operation', 'INCONNU')
-        montant = kwargs.get('montant', 0)
-        solde = kwargs.get('solde', 0)
-        
-        print(f"[Email → {self.email}] "
-              f"{type_op} de {montant:.2f}DT. Solde: {solde:.2f}DT")
+        if type_op == 'DEPOT':
+            print(f"  [Message] {compte._titulaire}, vous avez déposé {montant:.2f}DT avec succès!")
+        elif type_op == 'RETRAIT':
+            print(f"  [Message] {compte._titulaire}, vous avez retiré {montant:.2f}DT avec succès!")
 
 
 if __name__ == "__main__":
-    print("ÉTAPE 3: Système avec Pattern Observer")
-    compte = CompteBancaireObservable("Imed Zayet", 1000.0)
-    print("\n  Création et attachement des observateurs  ")
+    print("ÉTAPE 3: Pattern Observer\n")
+    
+    nom = input("Entrez le nom du titulaire: ")
+    solde = float(input("Entrez le solde initial: "))
+    seuil = float(input("Entrez le seuil d'alerte: "))
+    
+    compte = CompteBancaireObservable(nom, solde)
     obs_affichage = ObservateurAffichage()
-    obs_historique = ObservateurHistorique()
-    obs_alerte = ObservateurAlerte(seuil=200.0)
-    obs_controle = ObservateurControle(limite_retrait=500.0)
-    obs_email = ObservateurNotificationEmail("zayetimed01@gmail.com")
+    obs_alerte = ObservateurAlerte(seuil)
+    obs_message = ObservateurMessage()
+    
     compte.attacher(obs_affichage)
-    compte.attacher(obs_historique)
     compte.attacher(obs_alerte)
-    compte.attacher(obs_controle)
-    compte.attacher(obs_email)
-    print("Opérations avec notifications automatiques")
-    compte.deposer(500.0)
-    compte.retirer(300.0)
-    compte.retirer(800.0)
-    compte.retirer(200.0)
-
-    print("Ajout dynamique d'un nouvel observateur")
-    class ObservateurSMS(Observer):
-        def __init__(self, numero: str):
-            self.numero = numero
+    compte.attacher(obs_message)
+    
+    while True:
+        print("\n--- Menu ---")
+        print("1. Déposer")
+        print("2. Retirer")
+        print("3. Afficher solde")
+        print("4. Afficher historique")
+        print("0. Quitter")
         
-        def update(self, sujet: Observable, **kwargs) -> None:
-            print(f"[SMS → {self.numero}] Notification reçue!")
-    obs_sms = ObservateurSMS("06 12 34 56 78")
-    compte.attacher(obs_sms)
-    compte.deposer(100.0)
-    print("Détachement d'un observateur")
-    compte.detacher(obs_email)
-    compte.deposer(50.0)
+        choix = input("\nVotre choix: ")
+        
+        if choix == "1":
+            montant = float(input("Montant à déposer: "))
+            compte.deposer(montant)
+        
+        elif choix == "2":
+            montant = float(input("Montant à retirer: "))
+            compte.retirer(montant)
+        
+        elif choix == "3":
+            compte.afficher_solde()
+        
+        elif choix == "4":
+            compte.afficher_historique()
+        
+        elif choix == "0":
+            break
+        
+        else:
+            print("Choix invalide")
